@@ -1,6 +1,8 @@
 # Simple-UniverSeg
 Course Project For EC 500
 
+# Pretrained - Model
+The pre-trained UniverSeg model is present at 
 
 # path:
 ```sh
