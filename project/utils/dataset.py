@@ -84,7 +84,7 @@ def require_download_oasis():
 class OASISDataset(Dataset):
     split: Literal["support", "test"]
     label: int
-    support_frac: float = 0.04
+    support_frac: float = 0.154
 
     def __post_init__(self):
         T = torch.from_numpy
