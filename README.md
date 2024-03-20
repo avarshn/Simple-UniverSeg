@@ -1,8 +1,11 @@
 # Simple-UniverSeg
 Course Project For EC 500
 
-# Pretrained - Model
-The pre-trained UniverSeg model is present at 
+# Pre-trained UniverSeg Model
+The pre-trained UniverSeg model is described at project/models/original_universeg/model.py
+
+# Evaluation Script (project/main.py)
+This script evaluates the pre-trained UniverSeg model on [Neurite OASIS Sample Data](https://github.com/adalca/medical-datasets/blob/master/neurite-oasis.md) with 24 seg protocol.
 
 # path:
 ```sh
