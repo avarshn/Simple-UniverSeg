@@ -32,3 +32,6 @@ source /projectnb/ec500kb/students/jueqiw/venvs/project/bin/activated
 
 source ./HWenv/bin/activate
 ```
+
+# Licenses
+Code is released under the Apache 2.0 license.
