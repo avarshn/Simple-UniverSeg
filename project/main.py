@@ -74,18 +74,21 @@ def test_origin_UniverSeg(device: torch.device, test_labels: list[int]):
                 # print(
                 #     f"hard_pred: {hard_pred_one_hot_.shape}, label: {label_one_hot_.shape}"
                 # )
+
+                print(f"hard_pred: {hard_pred}")
                 cur_hausdorff = compute_hausdorff_distance(
                     hard_pred_one_hot, label_one_hot, percentile=95
                 )
                 dices.append(cur_dice)
                 hausdorffs.append(cur_hausdorff.item())
+
                 # visualize
                 # res = {"data": [image, label, pred, pred > 0.5]}
                 # titles = ["image", "label", "pred (soft)", "pred (hard)"]
                 # visualize_tensors(res, col_wrap=4, col_names=titles)
 
             print(
-                f"Test label: {test_label}, support set size: {support_set_size}, dice: {np.mean(dices):.4f}, hausdorff: {np.mean(hausdorffs):.4f}"
+                f"Test label: {test_label}, support set size: {support_set_size}, dice: {np.mean(dices):.4f}, std:{np.std(dices):.4f}, hausdorff: {np.mean(hausdorffs):.4f}, std: {np.std(hausdorffs):.4f}"
             )
 
 
