@@ -34,4 +34,4 @@ source ./HWenv/bin/activate
 ```
 
 # Licenses
-Code is released under the Apache 2.0 license.
+Code is released under the [Apache 2.0 license](LICENSE).
