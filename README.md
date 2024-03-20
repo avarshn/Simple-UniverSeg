@@ -7,6 +7,10 @@ The pre-trained UniverSeg model is described at project/models/original_universe
 # Evaluation Script (project/main.py)
 This script evaluates the pre-trained UniverSeg model on [Neurite OASIS Sample Data](https://github.com/adalca/medical-datasets/blob/master/neurite-oasis.md) with 24 seg protocol.
 
+# Utilities scripts (project/utils folder)
+- dataset.py: Loads the Neurite OASIS data.
+- visualization.py: For visualizing the Original Image, Ground truths, Soft Predictions and Predictions
+
 # path:
 ```sh
 module load python3/3.8.10
