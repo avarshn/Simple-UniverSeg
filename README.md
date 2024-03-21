@@ -1,5 +1,5 @@
 # Simple-UniverSeg
-Course Project For EC 500
+Course Project For ENG EC 500 - Biomedical Images for AI
 
 # Task
 To train a simpler variant of UniverSeg, which trains on several labels of 24 seg-protocol of 2D brain MRI and generalize to holdout labels.
