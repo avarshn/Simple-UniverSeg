@@ -26,9 +26,9 @@ Code is released under the [Apache 2.0 license](LICENSE).
 
 # Code Details
 Adapted Code:
-- dataset.py and visualization.py: This code has been modified from the following sources: {https://github.com/JJGO/UniverSeg/blob/main/example_data/oasis.py} for processing the OASIS dataset.
-- OASIS dataset processing details are available at {https://github.com/adalca/medical-datasets/blob/master/neurite-oasis.md}.
-- main.py: The inference pipeline has been adapted from {https://colab.research.google.com/drive/1TiNAgCehFdyHMJsS90V9ygUw0rLXdW0r?usp=sharing}.
+- dataset.py and visualization.py: This code has been modified from the following sources: https://github.com/JJGO/UniverSeg/blob/main/example_data/oasis.py for processing the OASIS dataset.
+- OASIS dataset processing details are available at https://github.com/adalca/medical-datasets/blob/master/neurite-oasis.md.
+- main.py: The inference pipeline has been adapted from https://colab.research.google.com/drive/1TiNAgCehFdyHMJsS90V9ygUw0rLXdW0r?usp=sharing.
 
 Additional Code:
 - main.py: Included Dice Score and HD95 evaluation metrics.
