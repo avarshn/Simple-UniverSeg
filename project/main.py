@@ -84,27 +84,6 @@ def pred_plot(device: torch.device):
                 pred_image.append(hard_pred)
                 gt.append(label)
                 dice_scores.append(cur_dice)
-
-                # # compute hausdorff distance
-                # hard_pred_one_hot = F.one_hot(hard_pred.long(), num_classes=2).permute(
-                #     0, 3, 1, 2
-                # )
-                # label_one_hot = F.one_hot(label.long(), num_classes=2).permute(
-                #     0, 3, 1, 2
-                # )
-
-                # # hard_pred = torch.cat([1 - hard_pred, hard_pred], dim=0)
-                # # label = torch.cat([1 - label, label], dim=0)
-
-                # # hard_pred_one_hot_ = hard_pred_one_hot.unsqueeze(0)
-                # # label_one_hot_ = label_one_hot.unsqueeze(0)
-                # # print(
-                # #     f"hard_pred: {hard_pred_one_hot_.shape}, label: {label_one_hot_.shape}"
-                # # )
-
-                # cur_hausdorff = compute_hausdorff_distance(
-                #     hard_pred_one_hot, label_one_hot, percentile=95
-                # )
                 break
 
         # visualize
@@ -148,39 +127,6 @@ def pred_plot(device: torch.device):
                 ax.set_yticks([])
 
         plt.savefig("/projectnb/ec500kb/projects/UniverSeg/code/plot.pdf", dpi=300)
-
-        # if not np.isnan(cur_dice):
-        #     dices.append(cur_dice)
-        # else:
-        #     print(
-        #         "Dice NA test_label",
-        #         test_label,
-        #         "support_set_size",
-        #         support_set_size,
-        #         "idx",
-        #         idx,
-        #     )
-
-        # if not np.isnan(cur_hausdorff.item()):
-        #     hausdorffs.append(cur_hausdorff.item())
-        # else:
-        #     print(
-        #         "HD95 test_label",
-        #         test_label,
-        #         "support_set_size",
-        #         support_set_size,
-        #         "idx",
-        #         idx,
-        #     )
-
-        # visualize
-        # res = {"data": [image, label, pred, pred > 0.5]}
-        # titles = ["image", "label", "pred (soft)", "pred (hard)"]
-        # visualize_tensors(res, col_wrap=4, col_names=titles)
-
-        # print(
-        #     f"Test label: {test_label}, support set size: {support_set_size}, dice: {np.mean(dices):.4f}, std:{np.std(dices):.4f}, hausdorff: {np.mean(hausdorffs):.4f}, std: {np.std(hausdorffs):.4f}"
-        # )
 
 
 def test_UniverSeg(device: torch.device):
@@ -221,102 +167,21 @@ def test_UniverSeg(device: torch.device):
                 gt.append(label)
                 dice_scores.append(cur_dice)
 
-                # # compute hausdorff distance
-                # hard_pred_one_hot = F.one_hot(hard_pred.long(), num_classes=2).permute(
-                #     0, 3, 1, 2
-                # )
-                # label_one_hot = F.one_hot(label.long(), num_classes=2).permute(
-                #     0, 3, 1, 2
-                # )
+                # compute hausdorff distance
+                hard_pred_one_hot = F.one_hot(hard_pred.long(), num_classes=2).permute(
+                    0, 3, 1, 2
+                )
+                label_one_hot = F.one_hot(label.long(), num_classes=2).permute(
+                    0, 3, 1, 2
+                )
 
-                # # hard_pred = torch.cat([1 - hard_pred, hard_pred], dim=0)
-                # # label = torch.cat([1 - label, label], dim=0)
+                cur_hausdorff = compute_hausdorff_distance(
+                    hard_pred_one_hot, label_one_hot, percentile=95
+                )
 
-                # # hard_pred_one_hot_ = hard_pred_one_hot.unsqueeze(0)
-                # # label_one_hot_ = label_one_hot.unsqueeze(0)
-                # # print(
-                # #     f"hard_pred: {hard_pred_one_hot_.shape}, label: {label_one_hot_.shape}"
-                # # )
-
-                # cur_hausdorff = compute_hausdorff_distance(
-                #     hard_pred_one_hot, label_one_hot, percentile=95
-                # )
-                break
-
-        # visualize
-        # using matplotlib to draw 7 col and 3 row image with title for each image on the first row
-        d = 2.5
-        rows, cols = 3, 7
-        fig, axes = plt.subplots(rows, cols, figsize=(d * cols, d * rows))
-        col_names = [
-            "N = 1",
-            "N = 2",
-            "N = 4",
-            "N = 8",
-            "N = 16",
-            "N = 32",
-            "N = 64",
-        ]
-        if rows == 1:
-            axes = axes.reshape(1, cols)
-
-        grp = ["Input Image", "Prediction", "Ground Truth"]
-        for g, (grp, tensors) in enumerate(zip(grp, [input_image, pred_image, gt])):
-            for k, tensor in enumerate(tensors):
-                col = k % cols
-                row = g + 7 * (k // cols)
-                x = tensor.detach().cpu().numpy().squeeze()
-                ax = axes[row, col]
-                if len(x.shape) == 2:
-                    ax.imshow(x, vmin=0, vmax=1, cmap="gray")
-                else:
-                    ax.imshow(E.rearrange(x, "C H W -> H W C"))
-                if col == 0:
-                    ax.set_ylabel(grp, fontsize=16)
-                if col_names is not None and row == 0:
-                    ax.set_title(col_names[col])
-
-        for i in range(rows):
-            for j in range(cols):
-                ax = axes[i, j]
-                ax.grid(False)
-                ax.set_xticks([])
-                ax.set_yticks([])
-
-        plt.savefig("/projectnb/ec500kb/projects/UniverSeg/code/plot.pdf", dpi=300)
-
-        # if not np.isnan(cur_dice):
-        #     dices.append(cur_dice)
-        # else:
-        #     print(
-        #         "Dice NA test_label",
-        #         test_label,
-        #         "support_set_size",
-        #         support_set_size,
-        #         "idx",
-        #         idx,
-        #     )
-
-        # if not np.isnan(cur_hausdorff.item()):
-        #     hausdorffs.append(cur_hausdorff.item())
-        # else:
-        #     print(
-        #         "HD95 test_label",
-        #         test_label,
-        #         "support_set_size",
-        #         support_set_size,
-        #         "idx",
-        #         idx,
-        #     )
-
-        # visualize
-        # res = {"data": [image, label, pred, pred > 0.5]}
-        # titles = ["image", "label", "pred (soft)", "pred (hard)"]
-        # visualize_tensors(res, col_wrap=4, col_names=titles)
-
-        # print(
-        #     f"Test label: {test_label}, support set size: {support_set_size}, dice: {np.mean(dices):.4f}, std:{np.std(dices):.4f}, hausdorff: {np.mean(hausdorffs):.4f}, std: {np.std(hausdorffs):.4f}"
-        # )
+            print(
+                f"Test label: {test_label}, support set size: {support_set_size}, dice: {np.mean(dices):.4f}, std:{np.std(dices):.4f}, hausdorff: {np.mean(hausdorffs):.4f}, std: {np.std(hausdorffs):.4f}"
+            )
 
 
 if __name__ == "__main__":
