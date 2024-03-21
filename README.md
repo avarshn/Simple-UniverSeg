@@ -22,3 +22,21 @@ This script evaluates the pre-trained UniverSeg model on [Neurite OASIS Sample D
 
 # Licenses
 Code is released under the [Apache 2.0 license](LICENSE).
+
+
+\subsection{Code Details}
+
+% \textbf{dataset.py} and \textbf{visualization.py} -- 
+% The code has been modified from the following sources:
+% \begin{itemize}
+%   \item \url{https://github.com/JJGO/UniverSeg/blob/main/example_data/oasis.py} for processing the OASIS dataset.
+%   \item OASIS dataset processing details available at \url{https://github.com/adalca/medical-datasets/blob/master/neurite-oasis.md}.
+% \end{itemize}
+% \textbf{main.py} -- 
+% The inference pipeline has been adapted from \url{https://colab.research.google.com/drive/1TiNAgCehFdyHMJsS90V9ygUw0rLXdW0r?usp=sharing}.
+% \textbf{Additional Code:}
+% \begin{itemize}
+%   \item \textbf{main.py}: Enhanced with Dice Score and HD95 evaluation metric.
+%   \item \textbf{choose\_labels.ipynb}: Provides a comparison of the sizes of different Regions of Interest (ROIs) in Brain MRI images.
+%   \item \textbf{plot\_selected\_labels.ipynb}: Highlights labels to provide an overview of the various categories of labeled data.
+% \end{itemize}
