@@ -3,7 +3,7 @@ Course Project For EC 500
 
 # Task
 To train a simpler variant of UniverSeg, which trains on several labels of 24 seg-protocol of 2D brain MRI and generalize to holdout labels.
-![Few Shot Segmentation Task on a Query Image using a Support Set](relative/path/to/your_image.png)
+![Few Shot Segmentation Task on a Query Image using a Support Set](result/task.jpg)
 
 
 # Pre-trained UniverSeg Model
