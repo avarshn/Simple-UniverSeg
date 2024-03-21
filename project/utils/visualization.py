@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import einops as E
 
 
-def visualize_tensors(tensors, col_wrap=8, col_names=None, title=None):
+def visualize_tensors(tensors, col_wrap=1, col_names=None, title=None):
     M = len(tensors)
     N = len(next(iter(tensors.values())))
 
@@ -42,3 +42,4 @@ def visualize_tensors(tensors, col_wrap=8, col_names=None, title=None):
         plt.suptitle(title, fontsize=20)
 
     plt.tight_layout()
+    plt.savefig("/projectnb/ec500kb/projects/UniverSeg/code/pred.png")

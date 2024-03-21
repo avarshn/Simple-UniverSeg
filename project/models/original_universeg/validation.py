@@ -1,3 +1,4 @@
+# Ref: https://github.com/JJGO/UniverSeg/blob/main/universeg/validation.py
 """
 Module containing utility functions for validating arguments using Pydantic.
 

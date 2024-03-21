@@ -20,15 +20,15 @@ module load pytorch/1.13.1
 cd /projectnb/ec500kb/projects/UniverSeg/code
 cd /projectnb/ec500kb/projects/UniverSeg/data
 
-module load python3/3.10.12
 module load pytorch/1.13.1
 # virtualenv /projectnb/ec500kb/students/jueqiw/venvs/monai
 source /projectnb/ec500kb/students/jueqiw/venvs/project/bin/activated
 
 qrsh -P ec500kb -l h_rt=03:00:00 -l mem_per_core=3G -l gpus=1 -l gpu_c=7
 
+module load python3/3.10.12
 source /projectnb/ec500kb/projects/UniverSeg/code/project/HWenv/bin/activate
- pip install torch torchvision torchaudio
+pip install torch torchvision torchaudio
 ```
 
 # Licenses

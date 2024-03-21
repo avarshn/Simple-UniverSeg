@@ -1,3 +1,4 @@
+# Code is taken from: https://github.com/JJGO/UniverSeg/blob/main/universeg/model.py
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
