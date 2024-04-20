@@ -108,3 +108,35 @@ class OASISDataset(Dataset):
         if self.label is not None:
             seg = (seg == self._ilabel)[None]
         return img, seg
+
+
+@dataclass
+class My_OASISDataset(Dataset):
+    split: Literal["support", "dev", "test"]
+    label: int
+    support_frac: float = 0.6
+    test_frac: float = 0.2
+
+    def __post_init__(self):
+        T = torch.from_numpy
+        self._data = [(T(x)[None], T(y)) for x, y in load_folder(DATA_FOLDER)]
+        if self.label is not None:
+            self._ilabel = self.label
+        self._idxs = self._split_indexes()
+
+    def _split_indexes(self):
+        rng = np.random.default_rng(42)
+        N = len(self._data)
+        p = rng.permutation(N)
+        i = int(np.floor(self.support_frac * N))
+        j = int(np.floor(self.test_frac * N))
+        return {"support": p[:i], "dev": p[i : i + j], "test": p[i + j :]}[self.split]
+
+    def __len__(self):
+        return len(self._idxs)
+
+    def __getitem__(self, idx):
+        img, seg = self._data[self._idxs[idx]]
+        if self.label is not None:
+            seg = (seg == self._ilabel)[None]
+        return img, seg
