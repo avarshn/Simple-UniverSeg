@@ -1,9 +1,10 @@
 import itertools
-from collections import defaultdict
 import pathlib
 import subprocess
-from dataclasses import dataclass
 import random
+from dataclasses import dataclass
+from collections import defaultdict
+from argparse import ArgumentParser, Namespace
 
 import torch
 import numpy as np
@@ -18,12 +19,13 @@ import PIL
 import monai.losses
 
 import utils.dataset as example_data
-from utils.visualization import visualize_tensors
+from utils.visualization import visualize_tensors, log_image
 from utils.utils import seed_everything, create_data_loaders
 from models.original_universeg import universeg
 from models.original_universeg.model import UniverSeg
 from utils.metric import dice_score
-from utils.const import DATA_FOLDER, TENSORBOARD_LOG_DIR
+from utils.const import DATA_FOLDER, TENSORBOARD_LOG_DIR, RESULT_FOLDER
+from utils.add_argument import add_argument
 
 
 @torch.no_grad()
@@ -70,7 +72,6 @@ def test_UniverSeg(device: torch.device):
             support_images = torch.stack(support_images).to(device)
             support_labels = torch.stack(support_labels).to(device)
 
-            # select an image, label test pair
             dices, hausdorffs = [], []
             for idx in range(len(d_test)):
                 image, label = d_test[idx]
@@ -107,14 +108,14 @@ def test_UniverSeg(device: torch.device):
 
 
 def main(device: torch.device, writer: SummaryWriter):
-    model = UniverSeg(encoder_blocks=[16, 16]).to(device)
+    model = UniverSeg(encoder_blocks=[16, 8]).to(device)
 
     lr = 1e-3
     optimizer = torch.optim.SGD(
         model.parameters(), lr=lr, momentum=0.9, weight_decay=1e-3
     )
     iterations = 414 * 20 * 100
-    val_interval = 500
+    val_interval = 100
     support_set_size = 32
     batch_size = 16
 
@@ -123,20 +124,24 @@ def main(device: torch.device, writer: SummaryWriter):
     train_labels = {label for label in range(1, 25)} - test_labels
 
     train_data_loaders, train_datasets = create_data_loaders(
-        train_labels, batch_size, support_set_size
+        train_labels, batch_size, support_set_size, split="support"
     )
     val_data_loaders, val_datasets = create_data_loaders(
-        test_labels, batch_size, support_set_size
+        test_labels, batch_size, support_set_size, split="dev"
+    )
+    test_data_loaders, test_datasets = create_data_loaders(
+        test_labels, batch_size, support_set_size, split="test"
     )
 
     step = 0
+    best_dice = 0
     for iteration in range(iterations):
         model.train()
 
         task_idx = np.random.randint(20)
         cur_train_data_loader = train_data_loaders[task_idx]
         batch_data = next(iter(cur_train_data_loader))
-        batch_indices = cur_train_data_loader.batch_sampler
+        batch_indices = next(iter(cur_train_data_loader.batch_sampler))
         step += 1
         image, labels = batch_data[0].to(device), batch_data[1].to(device)
 
@@ -152,7 +157,6 @@ def main(device: torch.device, writer: SummaryWriter):
             )
             cur_support_images = torch.stack(cur_support_images).to(device)
             cur_support_labels = torch.stack(cur_support_labels).to(device)
-
             support_images_batch.append(cur_support_images)
             support_labels_batch.append(cur_support_labels)
 
@@ -167,14 +171,22 @@ def main(device: torch.device, writer: SummaryWriter):
         loss.backward()
         optimizer.step()
         writer.add_scalar("train_loss/dice_loss", loss.item(), step)
-        print(f"current iteration: {iteration + 1}, current loss: {loss.item():.4f}")
 
-        if (iteration + 1) % val_interval == 0:
+        if iteration % val_interval == 0:
             model.eval()
             with torch.no_grad():
+                (
+                    dice_scores,
+                    hausdorffs,
+                    input_imgs,
+                    label_imgs,
+                    pred_img_softs,
+                    pred_img_hards,
+                ) = ([], [], [], [], [], [])
                 for task_idx in range(4):
-                    dice_scores, hausdorffs = [], []
+                    cur_dice_scores, cur_hausdorffs = [], []
                     cur_dev_data_loader = val_data_loaders[task_idx]
+                    log_idx = 0
                     for dev_data, dev_indices in zip(
                         cur_dev_data_loader, cur_dev_data_loader.batch_sampler
                     ):
@@ -183,7 +195,8 @@ def main(device: torch.device, writer: SummaryWriter):
                             dev_data[1].to(device),
                         )
                         support_images_batch, support_labels_batch = [], []
-                        for _ in range(batch_size):
+                        cur_batch_size = dev_image.shape[0]
+                        for _ in range(cur_batch_size):
                             support_set = [
                                 element
                                 for idx, element in enumerate(val_datasets[task_idx])
@@ -209,8 +222,37 @@ def main(device: torch.device, writer: SummaryWriter):
                         )
                         dev_soft_pred = torch.sigmoid(dev_logits)
                         dev_hard_pred = dev_soft_pred.round().clip(0, 1)
-                        dice_scores.append(dice_score(dev_hard_pred, dev_label))
 
+                        if log_idx == 0:
+                            input_imgs.append(
+                                dev_image[iteration % dev_image.shape[0], 0, :, :]
+                                .cpu()
+                                .numpy()
+                            )
+                            label_imgs.append(
+                                dev_label[iteration % dev_label.shape[0], 0, :, :]
+                                .cpu()
+                                .numpy()
+                            )
+                            pred_img_softs.append(
+                                dev_soft_pred[
+                                    iteration % dev_soft_pred.shape[0], 0, :, :
+                                ]
+                                .cpu()
+                                .numpy()
+                            )
+                            pred_img_hards.append(
+                                dev_hard_pred[
+                                    iteration % dev_hard_pred.shape[0], 0, :, :
+                                ]
+                                .cpu()
+                                .numpy()
+                            )
+                            log_idx += 1
+
+                        cur_dice_scores.append(
+                            torch.mean(dice_score(dev_hard_pred, dev_label)).item()
+                        )
                         hard_pred_one_hot = (
                             F.one_hot(dev_hard_pred.long(), num_classes=2)
                             .permute(0, 4, 1, 2, 3)
@@ -224,34 +266,69 @@ def main(device: torch.device, writer: SummaryWriter):
                         cur_hausdorff = compute_hausdorff_distance(
                             hard_pred_one_hot, label_one_hot, percentile=95
                         )
-                        hausdorffs.append(cur_hausdorff)
+                        cur_hausdorff = cur_hausdorff.reshape(-1, 1)
+                        filtered_hausdorff = cur_hausdorff[
+                            ~torch.any(cur_hausdorff.isnan(), dim=1)
+                        ]
+                        cur_hausdorffs.append(
+                            torch.mean(filtered_hausdorff, dim=0).item()
+                        )
 
-                dice_result = sum(dice_scores) / len(dice_scores)
-                hausdorff_result = sum(hausdorffs) / len(hausdorffs)
-                writer.add_scalar(
-                    f"val_metric_task_{task_idx}/dice_score", dice_result, iteration
-                )
-                writer.add_scalar(
-                    f"val_metric_{task_idx}/hausdorff_distance",
-                    hausdorff_result,
+                    task_dice_scores = sum(cur_dice_scores) / len(cur_dice_scores)
+                    task_hausdorffs = sum(cur_hausdorffs) / len(cur_hausdorffs)
+                    dice_scores.append(task_dice_scores)
+                    hausdorffs.append(task_hausdorffs)
+                    writer.add_scalar(
+                        f"val_metric_task_{task_idx}/dice_score",
+                        task_dice_scores,
+                        iteration,
+                    )
+                    writer.add_scalar(
+                        f"val_metric_task_{task_idx}/hausdorff_distance",
+                        task_hausdorffs,
+                        iteration,
+                    )
+
+                log_image(
+                    writer,
+                    input_imgs,
+                    label_imgs,
+                    pred_img_softs,
+                    pred_img_hards,
                     iteration,
                 )
-                print(
-                    f"current epoch: {iteration + 1}"
-                    f" current dice score {task_idx}: {dice_result:.4f}"
+                over_all_dice = sum(dice_scores) / len(dice_scores)
+                over_all_hausdorff = sum(hausdorffs) / len(hausdorffs)
+                writer.add_scalar(
+                    "val_metric/overall_dice_score", over_all_dice, iteration
+                )
+                writer.add_scalar(
+                    "val_metric/overall_hausdorff_distance",
+                    over_all_hausdorff,
+                    iteration,
                 )
 
-            torch.save(
-                model.state_dict(),
-                DATA_FOLDER
-                / "UniverSeg_16_16"
-                / f"model_{iteration + 1}_dice_{dice_result}_hausdorff_{hausdorff_result}.pth",
-            )
+                if over_all_dice > best_dice:
+                    best_dice = over_all_dice
+                    print(
+                        f"saving model at iteration {iteration + 1} with dice {best_dice:.4f} and hausdorff {over_all_hausdorff:.4f}"
+                    )
+                    if not (RESULT_FOLDER / hparams.experiment_name).exists():
+                        (RESULT_FOLDER / hparams.experiment_name).mkdir(parents=True)
+                    torch.save(
+                        model.state_dict(),
+                        RESULT_FOLDER
+                        / hparams.experiment_name
+                        / f"model_{iteration + 1}_dice_{over_all_dice}_hausdorff_{over_all_hausdorff}.pth",
+                    )
 
 
 if __name__ == "__main__":
     seed_everything(42)
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    parser = ArgumentParser(description="Trainer args", add_help=False)
+    add_argument(parser)
+    hparams = parser.parse_args()
     # device = "cpu"
 
     # To create Figure 3
@@ -259,5 +336,5 @@ if __name__ == "__main__":
 
     # For table 1 and 2
     # test_UniverSeg(device=device)
-    writer = SummaryWriter(log_dir=TENSORBOARD_LOG_DIR / "UniverSeg_32_32")
+    writer = SummaryWriter(log_dir=TENSORBOARD_LOG_DIR / hparams.experiment_name)
     main(device=device, writer=writer)

@@ -17,11 +17,11 @@ def seed_everything(seed: int) -> None:
     torch.backends.cudnn.deterministic = True
 
 
-def create_data_loaders(labels_idx, batch_size, num_workers):
+def create_data_loaders(labels_idx, batch_size, num_workers, split):
     data_loaders = []
     datasets = []
     for task_idx in labels_idx:
-        d_support = example_data.My_OASISDataset("support", task_idx)
+        d_support = example_data.My_OASISDataset(split, task_idx)
         supportloader = DataLoader(
             d_support, batch_size=batch_size, shuffle=True, num_workers=num_workers
         )

@@ -3,8 +3,11 @@ import itertools
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import einops as E
 import torch
+import numpy as np
+from torch.utils.tensorboard import SummaryWriter
 
 import utils.dataset as example_data
 from models.original_universeg import universeg
@@ -48,14 +51,12 @@ def visualize_tensors(tensors, col_wrap=1, col_names=None, title=None):
     if title:
         plt.suptitle(title, fontsize=20)
 
-    plt.tight_layout()
-    plt.savefig("/projectnb/ec500kb/projects/UniverSeg/code/pred.png")
+    return plt.gcf()
 
 
 def pred_plot(device: torch.device):
     model = universeg(pretrained=True).to(device)
 
-    # test_labels = [1, 8, 10, 11]
     test_labels = [1]
     support_set_sizes = [1, 2, 4, 8, 16, 32, 64]
     input_image, pred_image, gt, dice_scores = [], [], [], []
@@ -133,3 +134,46 @@ def pred_plot(device: torch.device):
                 ax.set_yticks([])
 
         plt.savefig("/projectnb/ec500kb/projects/UniverSeg/code/plot.pdf", dpi=300)
+
+
+def log_image(
+    writer: SummaryWriter,
+    input_imgs: torch.Tensor,
+    label_imgs: torch.Tensor,
+    pred_img_softs: torch.Tensor,
+    pred_img_hards: torch.Tensor,
+    step: int,
+):
+    titles_list = [
+        "Input Image",
+        "Label",
+        "Pred (Soft)",
+        "Pred (Hard)",
+    ]
+    fig = plt.figure(figsize=(20, 20))
+    nrows, ncols = 4, 4
+    gs = gridspec.GridSpec(nrows=nrows, ncols=ncols)
+    for idx in range(nrows):
+        for jdx in range(ncols):
+            ax = plt.subplot(gs[idx * ncols + jdx])
+            if jdx == 0:
+                ax.imshow(np.rot90(input_imgs[idx], 2), cmap="gray")
+            elif jdx == 1:
+                ax.imshow(np.rot90(label_imgs[idx], 2), cmap="gray")
+            elif jdx == 2:
+                ax.imshow(np.rot90(pred_img_softs[idx], 2), cmap="gray")
+            elif jdx == 3:
+                ax.imshow(np.rot90(pred_img_hards[idx], 2), cmap="gray")
+            ax.grid(False)
+            ax.invert_xaxis()
+            ax.invert_yaxis()
+            ax.set_xticks([])
+            ax.set_yticks([])
+            if idx == 0:
+                ax.set_title(titles_list[idx * ncols + jdx])
+            if jdx == 0:
+                ax.set_ylabel(f"Task {idx}")
+
+    plt.tight_layout()
+    writer.add_figure(f"Iteration: {step} Val Image", fig, global_step=step)
+    return None
