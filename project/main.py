@@ -118,19 +118,20 @@ def main(device: torch.device, writer: SummaryWriter):
     val_interval = 100
     support_set_size = 32
     batch_size = 16
+    num_workers = 4
 
     dice_loss = monai.losses.DiceLoss(to_onehot_y=True)
     test_labels = {1, 8, 10, 11}
     train_labels = {label for label in range(1, 25)} - test_labels
 
     train_data_loaders, train_datasets = create_data_loaders(
-        train_labels, batch_size, support_set_size, split="support"
+        train_labels, batch_size, num_workers, split="support"
     )
     val_data_loaders, val_datasets = create_data_loaders(
-        test_labels, batch_size, support_set_size, split="dev"
+        test_labels, batch_size, num_workers, split="dev"
     )
     test_data_loaders, test_datasets = create_data_loaders(
-        test_labels, batch_size, support_set_size, split="test"
+        test_labels, batch_size, num_workers, split="test"
     )
 
     step = 0
