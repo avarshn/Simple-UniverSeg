@@ -129,14 +129,23 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
             weight_decay=hyper_parameters["weight_decay"],
         )
 
-    # Validation
     val_interval = 100
     num_workers = 4
 
     if hparams.loss == "dice":
         dice_loss = monai.losses.DiceLoss(to_onehot_y=True)
     elif hparams.loss == "diceCE":
-        dice_loss = monai.losses.DiceCELoss(to_onehot_y=True)
+        diceCE_loss = monai.losses.DiceCELoss(
+            to_onehot_y=True,
+            lambda_dice=hparams.diceCE_lambda_dice,
+            lambda_ce=hparams.diceCE_lambda_CE,
+        )
+    elif hparams.loss == "bce":
+        bce_loss = monai.losses.DiceCELoss(
+            to_onehot_y=True,
+            lambda_dice=0,
+            lambda_ce=1,
+        )
     test_labels = {1, 8, 10, 11}
     train_labels = {label for label in range(1, 25)} - test_labels
 
@@ -186,13 +195,17 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
         one_hot_pred = torch.cat([1 - pred, pred], dim=1)
         if hparams.loss == "dice":
             loss = dice_loss(one_hot_pred, labels)
-        # logits_ = logits.squeeze(1)
-        # labels_ = labels.squeeze(1)
-        # loss_bce = F.binary_cross_entropy_with_logits(logits_, labels_)
-        # loss = loss_dice + loss_bce
+            writer.add_scalar("train_loss/dice_loss", loss.item(), step)
+        elif hparams.loss == "diceCE":
+            loss = diceCE_loss(
+                logits,
+                labels,
+                lambda_dice=hparams.diceCE_lambda_dice,
+                lambda_ce=hparams.diceCE_lambda_CE,
+            )
+            writer.add_scalar("train_loss/diceCE_loss", loss.item(), step)
         loss.backward()
         optimizer.step()
-        writer.add_scalar("train_loss/dice_loss", loss.item(), step)
 
         if iteration % val_interval == 0:
             model.eval()
@@ -288,29 +301,30 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
                         cur_hausdorff = compute_hausdorff_distance(
                             hard_pred_one_hot, label_one_hot, percentile=95
                         )
-                        cur_hausdorff = cur_hausdorff.reshape(-1, 1)
-                        filtered_hausdorff = cur_hausdorff[
-                            ~torch.any(cur_hausdorff.isnan(), dim=1)
-                        ]
-                        cur_hausdorffs.append(
-                            torch.mean(filtered_hausdorff, dim=0).item()
-                        )
+                        cur_hausdorff_ = cur_hausdorff.cpu().numpy().flatten()
+                        tmp = []
+                        for i in range(cur_hausdorff_.shape[0]):
+                            if not np.isnan(cur_hausdorff_[i]):
+                                tmp.append(cur_hausdorff_[i])
+                        if len(tmp) != 0:
+                            cur_hausdorffs.append(np.mean(tmp))
 
                     task_dice_scores = sum(cur_dice_scores) / len(cur_dice_scores)
-                    task_hausdorffs = sum(cur_hausdorffs) / len(cur_hausdorffs)
+                    if len(cur_hausdorffs) != 0:
+                        task_hausdorffs = sum(cur_hausdorffs) / len(cur_hausdorffs)
+                        writer.add_scalar(
+                            f"val_metric_task_{task_idx}/hausdorff_distance",
+                            task_hausdorffs,
+                            iteration,
+                        )
+                        hausdorffs.append(task_hausdorffs)
+
                     dice_scores.append(task_dice_scores)
-                    hausdorffs.append(task_hausdorffs)
                     writer.add_scalar(
                         f"val_metric_task_{task_idx}/dice_score",
                         task_dice_scores,
                         iteration,
                     )
-                    writer.add_scalar(
-                        f"val_metric_task_{task_idx}/hausdorff_distance",
-                        task_hausdorffs,
-                        iteration,
-                    )
-
                 log_image(
                     writer,
                     input_imgs,

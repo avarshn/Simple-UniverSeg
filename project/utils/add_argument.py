@@ -13,3 +13,13 @@ def add_argument(parser: ArgumentParser):
         choices=["dice", "bce", "focal", "diceCE"],
         type=str,
     )
+    parser.add_argument(
+        "--diceCE_lambda_dice",
+        default=1,
+        type=float,
+    )
+    parser.add_argument(
+        "--diceCE_lambda_CE",
+        default=1,
+        type=float,
+    )
