@@ -21,10 +21,10 @@ This script evaluates the pre-trained UniverSeg model on [Neurite OASIS Sample D
 qrsh -P ec500kb -l h_rt=03:00:00 -l mem_per_core=3G -l gpus=1 -l gpu_c=7
 
 module load python3/3.8
+
 pip install torch torchvision torchaudio monai einops matplotlib tqdm nibabel pydantic scipy
 source /projectnb/ec500kb/projects/UniverSeg/code/project/HWenv/bin/activate
 source /projectnb/ec500kb/projects/UniverSeg/univer_seg_venv/bin/activate
-
 deactivate
 
 # To run the code

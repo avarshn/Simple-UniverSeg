@@ -360,7 +360,6 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
 
 
 if __name__ == "__main__":
-
     start_time = time()
     print(f"Start time : {start_time}")
     seed_everything(42)

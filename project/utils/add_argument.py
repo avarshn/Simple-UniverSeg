@@ -7,3 +7,9 @@ def add_argument(parser: ArgumentParser):
         default="new",
         type=str,
     )
+    parser.add_argument(
+        "--loss",
+        default="dice",
+        choices=["dice", "bce", "focal", "diceCE"],
+        type=str,
+    )

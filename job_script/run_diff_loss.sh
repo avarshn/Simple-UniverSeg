@@ -12,4 +12,5 @@ module load python3/3.8
 source /projectnb/ec500kb/projects/UniverSeg/univer_seg_venv/bin/activate
 
 python /projectnb/ec500kb/projects/UniverSeg/code/tmp/main_different_loss.py
-       --experiment_name="bce+dice"
+       --experiment_name="diceCE" \
+       --loss="dice"

@@ -133,7 +133,10 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
     val_interval = 100
     num_workers = 4
 
-    dice_loss = monai.losses.DiceLoss(to_onehot_y=True)
+    if hparams.loss == "dice":
+        dice_loss = monai.losses.DiceLoss(to_onehot_y=True)
+    elif hparams.loss == "diceCE":
+        dice_loss = monai.losses.DiceCELoss(to_onehot_y=True)
     test_labels = {1, 8, 10, 11}
     train_labels = {label for label in range(1, 25)} - test_labels
 
@@ -181,20 +184,15 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
         logits = model(image, support_images, support_labels)
         pred = torch.sigmoid(logits)
         one_hot_pred = torch.cat([1 - pred, pred], dim=1)
-        loss_dice = dice_loss(one_hot_pred, labels)
-        logits_ = logits.squeeze(1)
-        labels_ = labels.squeeze(1)
-        print("logits", logits_)
-        print("labels", labels_)
-        print("logits shape", logits_.shape)
-        print("labels shape", labels_.shape)
-        loss_bce = F.binary_cross_entropy_with_logits(logits_, labels_)
-        loss = loss_dice + loss_bce
+        if hparams.loss == "dice":
+            loss = dice_loss(one_hot_pred, labels)
+        # logits_ = logits.squeeze(1)
+        # labels_ = labels.squeeze(1)
+        # loss_bce = F.binary_cross_entropy_with_logits(logits_, labels_)
+        # loss = loss_dice + loss_bce
         loss.backward()
         optimizer.step()
-        writer.add_scalar("train_loss/dice_loss", loss_dice.item(), step)
-        writer.add_scalar("train_loss/bce_loss", loss_bce.item(), step)
-        writer.add_scalar("train_loss/total_loss", loss.item(), step)
+        writer.add_scalar("train_loss/dice_loss", loss.item(), step)
 
         if iteration % val_interval == 0:
             model.eval()
@@ -348,7 +346,6 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
 
 
 if __name__ == "__main__":
-
     start_time = time()
     print(f"Start time : {start_time}")
     seed_everything(42)
@@ -360,8 +357,8 @@ if __name__ == "__main__":
 
     hyper_parameters = {
         "lr": 1e-5,
-        "iterations": 4000,
-        "batch_size": 8,
+        "iterations": 6000,
+        "batch_size": 16,
         "support_set_size": 64,
         "encoder_blocks": [8, 8],
         "Optimizer": "Adam",  # "SGD" / "Adam"
