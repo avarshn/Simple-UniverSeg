@@ -182,7 +182,13 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
         pred = torch.sigmoid(logits)
         one_hot_pred = torch.cat([1 - pred, pred], dim=1)
         loss_dice = dice_loss(one_hot_pred, labels)
-        loss_bce = F.binary_cross_entropy_with_logits(logits, labels)
+        logits_ = logits.squeeze(1)
+        labels_ = labels.squeeze(1)
+        print("logits", logits_)
+        print("labels", labels_)
+        print("logits shape", logits_.shape)
+        print("labels shape", labels_.shape)
+        loss_bce = F.binary_cross_entropy_with_logits(logits_, labels_)
         loss = loss_dice + loss_bce
         loss.backward()
         optimizer.step()
@@ -353,11 +359,11 @@ if __name__ == "__main__":
     # device = "cpu"
 
     hyper_parameters = {
-        "lr": 1e-4,
+        "lr": 1e-5,
         "iterations": 4000,
         "batch_size": 8,
         "support_set_size": 64,
-        "encoder_blocks": [16, 8],
+        "encoder_blocks": [8, 8],
         "Optimizer": "Adam",  # "SGD" / "Adam"
         "momentum": 0.9,
         "weight_decay": 1e-3,
