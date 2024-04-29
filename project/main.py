@@ -118,20 +118,19 @@ def main(device: torch.device, writer: SummaryWriter):
     val_interval = 100
     support_set_size = 32
     batch_size = 16
-    num_workers = 4
 
     dice_loss = monai.losses.DiceLoss(to_onehot_y=True)
     test_labels = {1, 8, 10, 11}
     train_labels = {label for label in range(1, 25)} - test_labels
 
     train_data_loaders, train_datasets = create_data_loaders(
-        train_labels, batch_size, num_workers, split="support"
+        train_labels, batch_size, support_set_size, split="support"
     )
     val_data_loaders, val_datasets = create_data_loaders(
-        test_labels, batch_size, num_workers, split="dev"
+        test_labels, batch_size, support_set_size, split="dev"
     )
     test_data_loaders, test_datasets = create_data_loaders(
-        test_labels, batch_size, num_workers, split="test"
+        test_labels, batch_size, support_set_size, split="test"
     )
 
     step = 0
@@ -168,6 +167,7 @@ def main(device: torch.device, writer: SummaryWriter):
         logits = model(image, support_images, support_labels)
         pred = torch.sigmoid(logits)
         one_hot_pred = torch.cat([1 - pred, pred], dim=1)
+        total_loss = torch.Tensor([0]).to(device)
         loss = dice_loss(one_hot_pred, labels)
         loss.backward()
         optimizer.step()
