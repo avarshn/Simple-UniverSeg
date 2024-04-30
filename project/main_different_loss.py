@@ -141,11 +141,28 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
             lambda_ce=hparams.diceCE_lambda_CE,
         )
     elif hparams.loss == "bce":
-        bce_loss = monai.losses.DiceCELoss(
+        diceCE_loss = monai.losses.DiceCELoss(
             to_onehot_y=True,
             lambda_dice=0,
             lambda_ce=1,
         )
+    elif hparams.loss == "focal":
+        focal_loss = monai.losses.FocalLoss(
+            to_onehot_y=True, gamma=hparams.focal_gamma, alpha=hparams.focal_alpha
+        )
+    elif hparams.loss == "dice_focal":
+        dice_focal = monai.losses.DiceFocalLoss(
+            to_onehot_y=True,
+            lambda_dice=hparams.focal_dice_lambda_dice,
+            lambda_focal=hparams.focal_dice_lambda_focal,
+        )
+    elif hparams.loss == "dice_focal_Hausdorff":
+        dice_focal = monai.losses.DiceFocalLoss(
+            to_onehot_y=True,
+            lambda_dice=hparams.focal_dice_lambda_dice,
+            lambda_focal=hparams.focal_dice_lambda_focal,
+        )
+        hausdorff_loss = monai.losses.HausdorffDTLoss(to_onehot_y=True)
     test_labels = {1, 8, 10, 11}
     train_labels = {label for label in range(1, 25)} - test_labels
 
@@ -198,12 +215,39 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
             writer.add_scalar("train_loss/dice_loss", loss.item(), step)
         elif hparams.loss == "diceCE":
             loss = diceCE_loss(
-                logits,
+                one_hot_pred,
                 labels,
-                lambda_dice=hparams.diceCE_lambda_dice,
-                lambda_ce=hparams.diceCE_lambda_CE,
             )
             writer.add_scalar("train_loss/diceCE_loss", loss.item(), step)
+        elif hparams.loss == "bce":
+            loss = diceCE_loss(
+                one_hot_pred,
+                labels,
+            )
+            writer.add_scalar("train_loss/BCE_loss", loss.item(), step)
+        elif hparams.loss == "focal":
+            loss = focal_loss(
+                one_hot_pred,
+                labels,
+            )
+            writer.add_scalar("train_loss/focal_loss", loss.item(), step)
+        elif hparams.loss == "dice_focal":
+            loss = dice_focal(
+                one_hot_pred,
+                labels,
+            )
+            writer.add_scalar("train_loss/dice_focal", loss.item(), step)
+        elif hparams.loss == "dice_focal_Hausdorff":
+            loss = dice_focal(
+                one_hot_pred,
+                labels,
+            )
+            if iteration > 2500:
+                loss += 0.01 * hausdorff_loss(
+                    one_hot_pred,
+                    labels,
+                )
+            writer.add_scalar("train_loss/dice_focal_hausdorff", loss.item(), step)
         loss.backward()
         optimizer.step()
 

@@ -18,7 +18,7 @@ This script evaluates the pre-trained UniverSeg model on [Neurite OASIS Sample D
 
 # path:
 ```sh
-qrsh -P ec500kb -l h_rt=03:00:00 -l mem_per_core=3G -l gpus=1 -l gpu_c=7
+qrsh -P ec500kb -l h_rt=16:00:00 -l mem_per_core=3G -l gpus=1 -l gpu_c=7 
 
 module load python3/3.8
 
