@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from collections import defaultdict
 from argparse import ArgumentParser, Namespace
 
+from time import time
+
 import torch
 import numpy as np
 from monai.metrics import compute_hausdorff_distance
@@ -107,30 +109,72 @@ def test_UniverSeg(device: torch.device):
             )
 
 
-def main(device: torch.device, writer: SummaryWriter):
-    model = UniverSeg(encoder_blocks=[16, 8]).to(device)
+def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
+    model = UniverSeg(encoder_blocks=hyper_parameters["encoder_blocks"]).to(device)
 
-    lr = 1e-3
-    optimizer = torch.optim.SGD(
-        model.parameters(), lr=lr, momentum=0.9, weight_decay=1e-3
-    )
-    iterations = 414 * 20 * 100
+    lr = hyper_parameters["lr"]
+    iterations = hyper_parameters["iterations"]
+    batch_size = hyper_parameters["batch_size"]
+    support_set_size = hyper_parameters["support_set_size"]
+
+    if hyper_parameters["Optimizer"] == "Adam":
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=lr, weight_decay=hyper_parameters["weight_decay"]
+        )
+    elif hyper_parameters["Optimizer"] == "SGD":
+        optimizer = torch.optim.SGD(
+            model.parameters(),
+            lr=lr,
+            momentum=hyper_parameters["momentum"],
+            weight_decay=hyper_parameters["weight_decay"],
+        )
+
     val_interval = 100
-    support_set_size = 32
-    batch_size = 16
+    num_workers = 4
 
-    dice_loss = monai.losses.DiceLoss(to_onehot_y=True)
+    if hparams.loss == "dice":
+        dice_loss = monai.losses.DiceLoss(to_onehot_y=True)
+    elif hparams.loss == "diceCE":
+        diceCE_loss = monai.losses.DiceCELoss(
+            to_onehot_y=True,
+            lambda_dice=hparams.diceCE_lambda_dice,
+            lambda_ce=hparams.diceCE_lambda_CE,
+        )
+    elif hparams.loss == "bce":
+        diceCE_loss = monai.losses.DiceCELoss(
+            to_onehot_y=True,
+            lambda_dice=0,
+            lambda_ce=1,
+        )
+    elif hparams.loss == "focal":
+        focal_loss = monai.losses.FocalLoss(
+            to_onehot_y=True, gamma=hparams.focal_gamma, alpha=hparams.focal_alpha
+        )
+    elif hparams.loss == "dice_focal":
+        dice_focal = monai.losses.DiceFocalLoss(
+            to_onehot_y=True,
+            lambda_dice=hparams.focal_dice_lambda_dice,
+            lambda_focal=hparams.focal_dice_lambda_focal,
+        )
+    elif hparams.loss == "dice_focal_Hausdorff":
+        dice_loss = monai.losses.DiceLoss(to_onehot_y=True)
+        dice_focal = monai.losses.DiceFocalLoss(
+            to_onehot_y=True,
+            lambda_dice=hparams.focal_dice_lambda_dice,
+            lambda_focal=hparams.focal_dice_lambda_focal,
+        )
+        hausdorff_loss = monai.losses.HausdorffDTLoss(to_onehot_y=True)
     test_labels = {1, 8, 10, 11}
     train_labels = {label for label in range(1, 25)} - test_labels
 
     train_data_loaders, train_datasets = create_data_loaders(
-        train_labels, batch_size, support_set_size, split="support"
+        train_labels, batch_size, num_workers, split="support"
     )
     val_data_loaders, val_datasets = create_data_loaders(
-        test_labels, batch_size, support_set_size, split="dev"
+        test_labels, batch_size, num_workers, split="dev"
     )
     test_data_loaders, test_datasets = create_data_loaders(
-        test_labels, batch_size, support_set_size, split="test"
+        test_labels, batch_size, num_workers, split="test"
     )
 
     step = 0
@@ -167,11 +211,51 @@ def main(device: torch.device, writer: SummaryWriter):
         logits = model(image, support_images, support_labels)
         pred = torch.sigmoid(logits)
         one_hot_pred = torch.cat([1 - pred, pred], dim=1)
-        total_loss = torch.Tensor([0]).to(device)
-        loss = dice_loss(one_hot_pred, labels)
+        if hparams.loss == "dice":
+            loss = dice_loss(one_hot_pred, labels)
+            writer.add_scalar("train_loss/dice_loss", loss.item(), step)
+        elif hparams.loss == "diceCE":
+            loss = diceCE_loss(
+                one_hot_pred,
+                labels,
+            )
+            writer.add_scalar("train_loss/diceCE_loss", loss.item(), step)
+        elif hparams.loss == "bce":
+            loss = diceCE_loss(
+                one_hot_pred,
+                labels,
+            )
+            writer.add_scalar("train_loss/BCE_loss", loss.item(), step)
+        elif hparams.loss == "focal":
+            loss = focal_loss(
+                one_hot_pred,
+                labels,
+            )
+            writer.add_scalar("train_loss/focal_loss", loss.item(), step)
+        elif hparams.loss == "dice_focal":
+            loss = dice_focal(
+                one_hot_pred,
+                labels,
+            )
+            writer.add_scalar("train_loss/dice_focal", loss.item(), step)
+        elif hparams.loss == "dice_focal_Hausdorff":
+            if iteration <= 2500:
+                loss = dice_loss(
+                    one_hot_pred,
+                    labels,
+                )
+            if iteration > 2500:
+                loss = dice_focal(
+                    one_hot_pred,
+                    labels,
+                )
+                loss += 0.01 * hausdorff_loss(
+                    one_hot_pred,
+                    labels,
+                )
+            writer.add_scalar("train_loss/dice_focal_hausdorff", loss.item(), step)
         loss.backward()
         optimizer.step()
-        writer.add_scalar("train_loss/dice_loss", loss.item(), step)
 
         if iteration % val_interval == 0:
             model.eval()
@@ -267,29 +351,30 @@ def main(device: torch.device, writer: SummaryWriter):
                         cur_hausdorff = compute_hausdorff_distance(
                             hard_pred_one_hot, label_one_hot, percentile=95
                         )
-                        cur_hausdorff = cur_hausdorff.reshape(-1, 1)
-                        filtered_hausdorff = cur_hausdorff[
-                            ~torch.any(cur_hausdorff.isnan(), dim=1)
-                        ]
-                        cur_hausdorffs.append(
-                            torch.mean(filtered_hausdorff, dim=0).item()
-                        )
+                        cur_hausdorff_ = cur_hausdorff.cpu().numpy().flatten()
+                        tmp = []
+                        for i in range(cur_hausdorff_.shape[0]):
+                            if not np.isnan(cur_hausdorff_[i]):
+                                tmp.append(cur_hausdorff_[i])
+                        if len(tmp) != 0:
+                            cur_hausdorffs.append(np.mean(tmp))
 
                     task_dice_scores = sum(cur_dice_scores) / len(cur_dice_scores)
-                    task_hausdorffs = sum(cur_hausdorffs) / len(cur_hausdorffs)
+                    if len(cur_hausdorffs) != 0:
+                        task_hausdorffs = sum(cur_hausdorffs) / len(cur_hausdorffs)
+                        writer.add_scalar(
+                            f"val_metric_task_{task_idx}/hausdorff_distance",
+                            task_hausdorffs,
+                            iteration,
+                        )
+                        hausdorffs.append(task_hausdorffs)
+
                     dice_scores.append(task_dice_scores)
-                    hausdorffs.append(task_hausdorffs)
                     writer.add_scalar(
                         f"val_metric_task_{task_idx}/dice_score",
                         task_dice_scores,
                         iteration,
                     )
-                    writer.add_scalar(
-                        f"val_metric_task_{task_idx}/hausdorff_distance",
-                        task_hausdorffs,
-                        iteration,
-                    )
-
                 log_image(
                     writer,
                     input_imgs,
@@ -325,6 +410,8 @@ def main(device: torch.device, writer: SummaryWriter):
 
 
 if __name__ == "__main__":
+    start_time = time()
+    print(f"Start time : {start_time}")
     seed_everything(42)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     parser = ArgumentParser(description="Trainer args", add_help=False)
@@ -332,10 +419,31 @@ if __name__ == "__main__":
     hparams = parser.parse_args()
     # device = "cpu"
 
+    hyper_parameters = {
+        "lr": 1e-5,
+        "iterations": 6000,
+        "batch_size": 16,
+        "support_set_size": 64,
+        "encoder_blocks": [8, 8],
+        "Optimizer": "Adam",  # "SGD" / "Adam"
+        "momentum": 0.9,
+        "weight_decay": 1e-3,
+    }
+
     # To create Figure 3
     # pred_plot(device=device)
 
     # For table 1 and 2
     # test_UniverSeg(device=device)
     writer = SummaryWriter(log_dir=TENSORBOARD_LOG_DIR / hparams.experiment_name)
-    main(device=device, writer=writer)
+
+    # Add hyperparameters to TensorBoard
+    for key, value in hyper_parameters.items():
+        writer.add_text("Hyperparameters", f"{key}: {value}")
+
+    main(device=device, writer=writer, hyper_parameters=hyper_parameters)
+    end_time = time()
+
+    print(
+        f"Total time taken to run {hparams.experiment_name} experiment - {end_time - start_time}"
+    )
