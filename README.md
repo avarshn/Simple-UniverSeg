@@ -29,6 +29,9 @@ deactivate
 
 # To run the code
 python /projectnb/ec500kb/projects/UniverSeg/code/project/main.py --experiment_name="16_16"
+
+/projectnb/ec500kb/projects/UniverSeg/code/project/main_Augmentation_.py
+--config=/projectnb/ec500kb/projects/UniverSeg/code/project/configs_final.json
 ```
 # Plots for visualization (project/Plots)
 - choose_labels.ipynb
