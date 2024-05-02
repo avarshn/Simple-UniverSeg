@@ -1,5 +1,5 @@
 # Simple Variant of UniverSeg on 2D Brain MRI
-This is the code repository for the implementation of the training and inference scripts of a [UniverSeg model](https://arxiv.org/abs/2304.06131)
+This is the code repository for the implementation of the training and inference scripts of the [UniverSeg model](https://arxiv.org/abs/2304.06131)
 
 # Installation
 Install the packages from `requirements.txt` file using `pip`. 
@@ -11,7 +11,7 @@ Download the data into the `data` directory.
 
 # Training Configurations
 ## To add data augmentation
-Set the value of JSON keys ("do_in_task_augmentation" or/and "do_task_augmentation") to true otherwise false.
+Set the value of JSON keys ("do_in_task_augmentation" or/and "do_task_augmentation") to true otherwise keep false.
 
 # Training
 To run a training script, modify the configurations file, go to the `src` directory, and use the following command -
