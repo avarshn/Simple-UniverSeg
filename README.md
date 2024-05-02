@@ -25,7 +25,7 @@ python main_Augmentation_.py --config ./configurations/configs_final.json
 # Inference
 To run inference of the trained model, go to the `src` directory, use the following command -
 ```
-python inference.py --config ./configurations/configs1.json
+python Inference.py --config ./configurations/configs1.json
 ```
 
 # Task
