@@ -6,6 +6,20 @@ Install the packages from `requirements.txt` file using `pip`.
 ```
 pip install -r requirements.txt
 ```
+# Download a dataset
+Download the data into the `data` directory.
+
+# Training
+To run a training script, go to the `src` directory, use the following command -
+```
+python train.py --config ./configurations/configs1.json
+```
+
+# Inference
+To run a training script, go to the `src` directory, use the following command -
+```
+python train.py --config ./configurations/configs1.json
+```
 
 # Task
 To train a simpler variant of UniverSeg, which trains on several labels of 24 seg-protocol of 2D brain MRI and generalize to holdout labels.
