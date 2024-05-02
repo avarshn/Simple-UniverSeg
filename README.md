@@ -17,7 +17,7 @@ Set the value of JSON keys ("do_in_task_augmentation" or/and "do_task_augmentati
 ## To run a training script using Augmentation
 Modify the configurations file, go to the `project` directory, and use the following command -
 ```
-python main_Augmentation.py --config ./configurations/configs1_aug.json
+python main_Augmentation.py --config ./configurations/configs_aug.json
 ```
 ## To run a training script using Augmentation + Different Losses
 Modify the configurations file, go to the `project` directory, and use the following command -
