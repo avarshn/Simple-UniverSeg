@@ -1,12 +1,12 @@
 {
-    "experiment_name" : "no_aug_model_8_8_multiple_loss",
+    "experiment_name" : "in_task_task_aug_model_8_8",
     "lr" : 1e-5,
     "batch_size" : 16,
     "support_set_size" : 64,
     "encoder_blocks" : [8, 8],
     "iterations" : 6000,
-    "do_in_task_augmentation" : false,
-    "do_task_augmentation" : false,
+    "do_in_task_augmentation" : true,
+    "do_task_augmentation" : true,
     "Optimizer" : "Adam",
     "momentum" : 0.9,
     "weight_decay" : 1e-3
