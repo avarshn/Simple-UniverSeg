@@ -7,17 +7,24 @@ Install the packages from `requirements.txt` file using `pip`.
 pip install -r requirements.txt
 ```
 # Download a dataset
-Download the data into the `data` directory.
+Download the data into the `data` directory and specify its location in the `project/utils/const.py` for variable `DATA_FOLDER`
 
 # Training Configurations
 ## To add data augmentation
 Set the value of JSON keys ("do_in_task_augmentation" or/and "do_task_augmentation") to true otherwise keep false.
 
 # Training
-To run a training script, modify the configurations file, go to the `src` directory, and use the following command -
+## To run a training script using Augmentation
+Modify the configurations file, go to the `project` directory, and use the following command -
 ```
-python train.py --config ./configurations/configs1.json
+python main_Augmentation.py --config ./configurations/configs1_aug.json
 ```
+## To run a training script using Augmentation + Different Losses
+Modify the configurations file, go to the `project` directory, and use the following command -
+```
+python main_different_loss.py --config ./configurations/configs_loss.json
+```
+
 
 # Inference
 To run inference of the trained model, go to the `src` directory, use the following command -
