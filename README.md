@@ -18,14 +18,14 @@ Train a model with Augmentation + Combined Losses.
 
 Modify the configurations file, go to the `project` directory, and use the following command -
 ```
-python main_Augmentation_.py --config ./configurations/configs_final.json
+python main_Augmentation_.py --config ../configurations/configs_final.json
 ```
 
 
 # Inference
 To run inference of the trained model, go to the `src` directory, use the following command -
 ```
-python Inference.py --config ./configurations/configs1.json
+python Inference.py --config ../configurations/configs1.json
 ```
 
 # Task
