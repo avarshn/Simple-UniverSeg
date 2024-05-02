@@ -14,7 +14,8 @@ Download the data into the `data` directory and specify its location in the `pro
 Set the value of JSON keys ("do_in_task_augmentation" or/and "do_task_augmentation") to true otherwise keep false.
 
 # Training
-Train a model with Augmentation + Combined Losses
+Train a model with Augmentation + Combined Losses.
+
 Modify the configurations file, go to the `project` directory, and use the following command -
 ```
 python main_Augmentation_.py --config ./configurations/configs_final.json
