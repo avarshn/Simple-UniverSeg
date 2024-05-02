@@ -9,16 +9,20 @@ pip install -r requirements.txt
 # Download a dataset
 Download the data into the `data` directory.
 
+# Training Configurations
+## To add data augmentation
+Set the value of JSON keys ("do_in_task_augmentation" or/and "do_task_augmentation") to true otherwise false.
+
 # Training
-To run a training script, go to the `src` directory, use the following command -
+To run a training script, modify the configurations file, go to the `src` directory, and use the following command -
 ```
 python train.py --config ./configurations/configs1.json
 ```
 
 # Inference
-To run a training script, go to the `src` directory, use the following command -
+To run inference of the trained model, go to the `src` directory, use the following command -
 ```
-python train.py --config ./configurations/configs1.json
+python inference.py --config ./configurations/configs1.json
 ```
 
 # Task
