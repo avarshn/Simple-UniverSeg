@@ -1,5 +1,11 @@
-# Simple-UniverSeg
-Course Project For ENG EC 500 - Biomedical Images for AI
+# Simple Variant of UniverSeg on 2D Brain MRI
+This is the code repository for the implementation of the training and inference scripts of a [UniverSeg model](https://arxiv.org/abs/2304.06131)
+
+# Installation
+Install the packages from `requirements.txt` file using `pip`. 
+```
+pip install -r requirements.txt
+```
 
 # Task
 To train a simpler variant of UniverSeg, which trains on several labels of 24 seg-protocol of 2D brain MRI and generalize to holdout labels.
