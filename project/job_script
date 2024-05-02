@@ -27,4 +27,4 @@ echo "=========================================================="
 module load miniconda/23.1.0
 conda activate monai
 
-python main_Augmentation_.py --config ./configurations/configs24.json
+python main_Augmentation_.py --config ../configurations/configs_final.json
