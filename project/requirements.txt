@@ -1,6 +1,0 @@
-einops
-torch
-pydantic
-numpy
-Pillow
-nibabel
