@@ -1,0 +1,30 @@
+#!/bin/bash -l
+
+# Modify the job name, job name of output file and hyperparameters configs path
+
+#$ -N job24         # Give job a name
+#$ -o j24.out       # File name for the stdout output of the job.
+
+#$ -P ec500kb       # Specify the SCC project name you want to use
+#$ -l h_rt=8:00:00  # Specify the hard time limit for the job
+#$ -pe omp 8        # Number of cores
+#$ -l gpus=2        # Number of GPUs
+#$ -l gpu_c=8.0     # GPU Compute capacity
+
+#$ -j y            # Merge the error and output streams into a single file
+#$ -m bea          # The batch system sends an email to you. The possible values are – when the job begins (b), ends (e), is aborted (a), is suspended (s),
+                   # or never (n) – default.
+
+
+# Keep track of information related to the current job
+echo "=========================================================="
+echo "Start date : $(date)"
+echo "Job name : $JOB_NAME"
+echo "Job ID : $JOB_ID  $SGE_TASK_ID"
+echo "=========================================================="
+
+### Load your environment and run the job
+module load miniconda/23.1.0
+conda activate monai
+
+python main_Augmentation_.py --config ./configurations/configs24.json
