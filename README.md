@@ -7,7 +7,9 @@ Install the packages from `requirements.txt` file using `pip`.
 pip install -r requirements.txt
 ```
 # Download a dataset
-Download the data into the `data` directory and specify its location in the `project/utils/const.py` for variable `DATA_FOLDER`
+Download the data into the `data` directory and specify its location in the `src/utils/const.py` for variable `DATA_FOLDER`
+Specify the location of tensorboard directory in `src/utils/const.py` for variable `TENSORBOARD_LOG_DIR`
+Specify the location of directory to save best model checkpoints in `src/utils/const.py` for variable `TENSORBOARD_LOG_DIR`
 
 # Training Configurations
 ## To add data augmentation
@@ -18,7 +20,7 @@ Train a model with Augmentation + Combined Losses.
 
 Modify the configurations file, go to the `project` directory, and use the following command -
 ```
-python main_Augmentation_.py --config ../configurations/configs_final.json
+python main_Augmentation.py --config ../configurations/testing.json
 ```
 
 

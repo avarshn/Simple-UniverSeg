@@ -9,5 +9,7 @@
     "do_task_augmentation" : true,
     "Optimizer" : "Adam",
     "momentum" : 0.9,
-    "weight_decay" : 1e-3
+    "weight_decay" : 1e-3,
+    "lambda_dice" : 1,
+    "lambda_focal" : 0
 }
