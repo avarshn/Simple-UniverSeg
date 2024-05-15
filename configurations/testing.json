@@ -1,0 +1,15 @@
+{
+    "experiment_name" : "in_task_task_aug_model_8_8",
+    "lr" : 1e-4,
+    "batch_size" : 16,
+    "support_set_size" : 64,
+    "encoder_blocks" : [8, 8],
+    "iterations" : 50,
+    "do_in_task_augmentation" : true,
+    "do_task_augmentation" : true,
+    "Optimizer" : "Adam",
+    "momentum" : 0.9,
+    "weight_decay" : 1e-3,
+    "lambda_dice" : 1,
+    "lambda_focal" : 0
+}
