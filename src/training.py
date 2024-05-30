@@ -49,7 +49,7 @@ from models.original_universeg.model import UniverSeg
 from utils.metric import dice_score
 
 from utils.add_argument import add_argument_v2
-
+from utils.elastic_deformation import get_displacement
 
 @torch.no_grad()
 def inference(model, image, label, support_images, support_labels):
@@ -237,15 +237,17 @@ def task_augmentation(image, labels, support_images, support_labels):
         )
 
     # Elastic Warp
-    # if np.random.rand() < 0.1:
-    #     alpha = random.uniform(1, 2.5)
-    #     sigma = random.uniform(7, 8)
-    #     _, height, width = transforms.functional.get_dimensions(image)
-    #     displacement = get_displacement(alpha, sigma, [height, width])
-    #     image = transforms.functional.elastic(image, displacement, transforms.InterpolationMode.BILINEAR)
-    #     labels = transforms.functional.elastic(labels, displacement, transforms.InterpolationMode.NEAREST)
-    #     support_images = transforms.functional.elastic(support_images, displacement, transforms.InterpolationMode.NEAREST)
-    #     support_labels = transforms.functional.elastic(support_labels, displacement, transforms.InterpolationMode.NEAREST)
+    if hyper_parameters["apply_elastic_warp_for_task_aug"]:
+        print("Elastic Warp")
+        if np.random.rand() < 0.1:
+            alpha = random.uniform(1, 2.5)
+            sigma = random.uniform(7, 8)
+            _, height, width = transforms.functional.get_dimensions(image)
+            displacement = get_displacement(alpha, sigma, [height, width])
+            image = transforms.functional.elastic(image, displacement, transforms.InterpolationMode.BILINEAR)
+            labels = transforms.functional.elastic(labels, displacement, transforms.InterpolationMode.NEAREST)
+            support_images = transforms.functional.elastic(support_images, displacement, transforms.InterpolationMode.NEAREST)
+            support_labels = transforms.functional.elastic(support_labels, displacement, transforms.InterpolationMode.NEAREST)
 
     # Brightness Contrast Change
     if np.random.rand() < 0.5:
@@ -312,9 +314,10 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
         )
 
     # Validation
-    val_interval = 25
+    val_interval = hyper_parameters["val_interval"]
     num_workers = 4
 
+    # Losses
     dice_loss = monai.losses.DiceLoss(to_onehot_y=True)
     dice_focal = monai.losses.DiceFocalLoss(
         to_onehot_y=True,
@@ -323,6 +326,7 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
     )
     hausdorff_loss = monai.losses.HausdorffDTLoss(to_onehot_y=True)
 
+    # Test Labels
     test_labels = {1, 8, 10, 11}
     train_labels = {label for label in range(1, 25)} - test_labels
 
@@ -343,7 +347,7 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
     step = 0
     best_dice = 0
     for iteration in range(iterations):
-        print("Iteration", iteration)
+        print("Iteration", iteration + 1)
         model.train()
 
         task_idx = np.random.randint(20)
@@ -390,20 +394,31 @@ def main(device: torch.device, writer: SummaryWriter, hyper_parameters: dict):
         logits = model(image, support_images, support_labels)
         pred = torch.sigmoid(logits)
         one_hot_pred = torch.cat([1 - pred, pred], dim=1)
-        if iteration <= 2500:
-            loss = dice_loss(
-                one_hot_pred,
-                labels,
-            )
-        if iteration > 2500:
-            loss = dice_focal(
-                one_hot_pred,
-                labels,
-            )
-            loss += 0.01 * hausdorff_loss(
-                one_hot_pred,
-                labels,
-            )
+
+        if hyper_parameters["use_combined_loss"]:
+            if iteration <= 2500:
+                loss = dice_loss(
+                    one_hot_pred,
+                    labels,
+                )
+            if iteration > 2500:
+                loss = dice_focal(
+                    one_hot_pred,
+                    labels,
+                )
+                loss += hyper_parameters["lambda_hausdorff"] * hausdorff_loss(
+                    one_hot_pred,
+                    labels,
+                )
+
+        else:
+            # Only Dice loss
+            loss = loss = dice_loss(
+                    one_hot_pred,
+                    labels,
+                )
+
+        # Backpropagation and Model Parameters Updatation
         loss.backward()
         optimizer.step()
         writer.add_scalar("train_loss/dice_loss", loss.item(), step)
