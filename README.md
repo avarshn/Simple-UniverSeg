@@ -1,6 +1,11 @@
 # Simple Variant of UniverSeg on 2D Brain MRI
 This is the code repository for the implementation of the training and inference scripts of the [UniverSeg model](https://arxiv.org/abs/2304.06131)
 
+# Clone this repository
+```
+git clone https://github.com/avarshn/Simple-UniverSeg.git
+```
+
 # Installation
 Install the packages from `requirements.txt` file using `pip`. 
 ```
