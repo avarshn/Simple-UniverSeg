@@ -48,7 +48,7 @@ from models.original_universeg import universeg
 from models.original_universeg.model import UniverSeg
 from utils.metric import dice_score
 
-from utils.add_argument import add_argument_v2
+from utils.add_argument import training_args
 from utils.elastic_deformation import get_displacement
 
 @torch.no_grad()
@@ -585,7 +585,7 @@ if __name__ == "__main__":
     seed_everything(42)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     parser = ArgumentParser(description="Trainer args", add_help=False)
-    add_argument_v2(parser)
+    training_args(parser)
     hparams = parser.parse_args()
 
     # Load hyperparameters from JSON file

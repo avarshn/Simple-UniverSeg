@@ -53,7 +53,7 @@ def add_argument(parser: ArgumentParser):
     )
 
 
-def add_argument_v2(parser: ArgumentParser):
+def training_args(parser: ArgumentParser):
 
     parser.add_argument(
             "--config",
